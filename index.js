@@ -35,7 +35,21 @@ async function run() {
 run().catch(console.dir);
 
 const SupportCollection = client.db("ticket-generator").collection("supports");
+const usersCollection = client.db("ticket-generator").collection("users");
 
+app.post("/register", async (req, res) => {
+  const userData = req.body;
+  
+  console.log(userData);
+  try {
+    const result = await usersCollection.insertOne(userData);
+    console.log(result);
+    res.status(200).send({ success: "Support Posted Successfully" });
+  } catch (error) {
+    console.error("Error inserting user:", error);
+    res.status(500).send({ error: "Failed to post Support" });
+  }
+});
 // POST route for adding support
 app.post("/support-post", async (req, res) => {
   const userData = req.body;
@@ -50,15 +64,16 @@ app.post("/support-post", async (req, res) => {
     res.status(500).send({ error: "Failed to post Support" });
   }
 });
-
+const fixedEmail = "m@gmail.com";
+const fixedPassword = "password";
 // GET route for retrieving supports
-app.get("/all-supports", async (req, res) => {
-  try {
-    const supports = await SupportCollection.find({}).toArray();
-    res.status(200).json(supports);
-  } catch (error) {
-    console.error("Error retrieving supports:", error);
-    res.status(500).send({ error: "Failed to retrieve supports" });
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  
+  if (email === fixedEmail && password === fixedPassword) {
+    res.status(200).send({ success: "Login Successful" });
+  } else {
+    res.status(401).send({ error: "Wrong Email or Password" });
   }
 });
 
