@@ -1,15 +1,15 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.t0p010p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://ajmora:YyyuPqHLzItIMinE@cluster0.t0p010p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -19,27 +19,31 @@ const client = new MongoClient(uri, {
   },
 });
 
-let SupportCollection;
-
-async function connectToDatabase() {
+async function run() {
   try {
-    await client.connect();
-    SupportCollection = client.db("ticket-generator").collection("supports");
-    console.log("Connected to MongoDB");
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+    // Connect the client to the server (optional starting in v4.7)
+    // await client.connect();
+    // Send a ping to confirm a successful connection
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
+  } finally {
+    // Ensures that the client will close when you finish/error
   }
 }
+run().catch(console.dir);
 
-connectToDatabase();
+const SupportCollection = client.db("ticket-generator").collection("supports");
 
 // POST route for adding support
 app.post("/support-post", async (req, res) => {
   const userData = req.body;
-  userData.date = new Date().toISOString();  // Add the current date
+  userData.date = new Date().toISOString(); // Add the current date
   console.log(userData);
   try {
     const result = await SupportCollection.insertOne(userData);
+    console.log(result);
     res.status(200).send({ success: "Support Posted Successfully" });
   } catch (error) {
     console.error("Error inserting user:", error);
@@ -48,7 +52,7 @@ app.post("/support-post", async (req, res) => {
 });
 
 // GET route for retrieving supports
-app.get("/supports", async (req, res) => {
+app.get("/all-supports", async (req, res) => {
   try {
     const supports = await SupportCollection.find({}).toArray();
     res.status(200).json(supports);
@@ -58,17 +62,32 @@ app.get("/supports", async (req, res) => {
   }
 });
 
+// DELETE route for deleting support
+app.delete("/supports/:id", async (req, res) => {
+  const id = req.params.id;
+  console.log(id)
+  try {
+    const result = await SupportCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 1) {
+      res.status(200).send({ success: "Support Deleted Successfully" });
+    } else {
+      res.status(404).send({ error: "Support Not Found" });
+    }
+  } catch (error) {
+    console.error("Error deleting support:", error);
+    res.status(500).send({ error: "Failed to delete support" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("App is Running Successfully");
+});
+app.get("/test", (req, res) => {
+  res.send("Test is Running Successfully");
 });
 
 app.listen(port, () => {
   console.log(`App is running on port ${port}`);
 });
 
-// Gracefully shut down the server and close the MongoDB connection
-process.on("SIGINT", async () => {
-  console.log("Shutting down...");
-  await client.close();
-  process.exit();
-});
+
