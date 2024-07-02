@@ -64,6 +64,17 @@ app.post("/support-post", async (req, res) => {
     res.status(500).send({ error: "Failed to post Support" });
   }
 });
+
+// GET route for retrieving supports
+app.get("/all-supports", async (req, res) => {
+  try {
+    const supports = await SupportCollection.find({}).toArray();
+    res.status(200).json(supports);
+  } catch (error) {
+    console.error("Error retrieving supports:", error);
+    res.status(500).send({ error: "Failed to retrieve supports" });
+  }
+});
 const fixedEmail = "m@gmail.com";
 const fixedPassword = "password";
 // GET route for retrieving supports
